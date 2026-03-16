@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The user's full name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "The user's role." }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Medicine": {
+      "title": "Medicine",
+      "description": "Information about a medicine and its schedule.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns this medicine." },
+        "name": { "type": "string", "description": "The name of the medicine." },
+        "dosage": { "type": "string", "description": "The dosage of the medicine (e.g., 500mg)." },
+        "frequency": { "type": "string", "description": "How often to take the medicine (e.g., daily, twice a day)." },
+        "startDate": { "type": "string", "format": "date", "description": "The start date of the medication." },
+        "endDate": { "type": "string", "format": "date", "description": "The end date of the medication." }
+      },
+      "required": ["userId", "name", "dosage", "frequency", "startDate", "endDate"]
+    },
+    "Reminder": {
+      "title": "Reminder",
+      "description": "A specific time reminder for a medicine.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user." },
+        "medicineId": { "type": "string", "description": "The ID of the medicine." },
+        "medicineName": { "type": "string", "description": "Denormalized medicine name for easy display." },
+        "dosage": { "type": "string", "description": "Denormalized dosage for easy display." },
+        "reminderTime": { "type": "string", "format": "date-time", "description": "The time the reminder should trigger." },
+        "status": { "type": "string", "enum": ["pending", "taken", "missed"], "description": "The status of the reminder." }
+      },
+      "required": ["userId", "medicineId", "reminderTime", "status"]
+    },
+    "History": {
+      "title": "History",
+      "description": "A record of a medicine being taken.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user." },
+        "medicineId": { "type": "string", "description": "The ID of the medicine." },
+        "medicineName": { "type": "string", "description": "The name of the medicine." },
+        "dateTaken": { "type": "string", "format": "date-time", "description": "The exact time the medicine was taken." },
+        "status": { "type": "string", "description": "Status of the record (usually 'taken')." }
+      },
+      "required": ["userId", "medicineId", "dateTaken", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles." },
+    "/medicines/{medicineId}": { "schema": "Medicine", "description": "Medicines added by users." },
+    "/reminders/{reminderId}": { "schema": "Reminder", "description": "Individual reminders for medicines." },
+    "/history/{historyId}": { "schema": "History", "description": "History of medicines taken." }
+  }
+}

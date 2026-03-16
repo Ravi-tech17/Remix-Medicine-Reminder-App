@@ -1,0 +1,153 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - role: string (required, enum: ['admin', 'user'])
+    //
+    // Collection: medicines
+    // Document ID: {medicineId}
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - name: string (required, 1-100 chars)
+    //   - dosage: string (required, 1-50 chars)
+    //   - frequency: string (required, 1-50 chars)
+    //   - startDate: string (required, ISO 8601)
+    //   - endDate: string (required, ISO 8601)
+    //
+    // Collection: reminders
+    // Document ID: {reminderId}
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - medicineId: string (required)
+    //   - medicineName: string (required)
+    //   - dosage: string (required)
+    //   - reminderTime: string (required, ISO 8601)
+    //   - status: string (required, enum: ['pending', 'taken', 'missed'])
+    //
+    // Collection: history
+    // Document ID: {historyId}
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - medicineId: string (required)
+    //   - medicineName: string (required)
+    //   - dateTaken: string (required, ISO 8601)
+    //   - status: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    // Check if user is admin
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "rvh8429@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.keys().hasOnly(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'user'];
+    }
+
+    function isValidMedicine(data) {
+      return data.keys().hasAll(['userId', 'name', 'dosage', 'frequency', 'startDate', 'endDate']) &&
+             data.keys().hasOnly(['userId', 'name', 'dosage', 'frequency', 'startDate', 'endDate']) &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.dosage is string && data.dosage.size() > 0 && data.dosage.size() < 50 &&
+             data.frequency is string && data.frequency.size() > 0 && data.frequency.size() < 50 &&
+             isValidDateString(data.startDate) &&
+             isValidDateString(data.endDate);
+    }
+
+    function isValidReminder(data) {
+      return data.keys().hasAll(['userId', 'medicineId', 'medicineName', 'dosage', 'reminderTime', 'status']) &&
+             data.keys().hasOnly(['userId', 'medicineId', 'medicineName', 'dosage', 'reminderTime', 'status']) &&
+             data.userId == request.auth.uid &&
+             data.medicineId is string &&
+             data.medicineName is string && data.medicineName.size() > 0 && data.medicineName.size() < 100 &&
+             data.dosage is string && data.dosage.size() > 0 && data.dosage.size() < 50 &&
+             isValidDateString(data.reminderTime) &&
+             data.status in ['pending', 'taken', 'missed'];
+    }
+
+    function isValidHistory(data) {
+      return data.keys().hasAll(['userId', 'medicineId', 'medicineName', 'dateTaken', 'status']) &&
+             data.keys().hasOnly(['userId', 'medicineId', 'medicineName', 'dateTaken', 'status']) &&
+             data.userId == request.auth.uid &&
+             data.medicineId is string &&
+             data.medicineName is string && data.medicineName.size() > 0 && data.medicineName.size() < 100 &&
+             isValidDateString(data.dateTaken) &&
+             data.status is string && data.status.size() > 0 && data.status.size() < 50;
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(userId) && request.resource.data.role == 'user') || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
+    }
+
+    match /medicines/{medicineId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidMedicine(request.resource.data);
+      allow update: if isDocOwner() && isValidMedicine(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /reminders/{reminderId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidReminder(request.resource.data);
+      allow update: if isDocOwner() && isValidReminder(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /history/{historyId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidHistory(request.resource.data);
+      allow update: if isDocOwner() && isValidHistory(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+  }
+}
