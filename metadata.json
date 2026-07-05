@@ -2,6 +2,7 @@
   "name": "Remix: Medicine Reminder App",
   "description": "A simple and effective medicine reminder application to help users take their medications on time with browser notifications and history tracking.",
   "requestFramePermissions": [
-    "notifications"
+    "notifications",
+    "microphone"
   ]
 }
