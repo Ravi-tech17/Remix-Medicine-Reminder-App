@@ -4,22 +4,6 @@ A modern medicine reminder application that helps users manage medications, rece
 
 ---
 
-## 📸 Screenshots
-
-### Mobile UI
-
-<p align="center">
-  <img src="C:\Users\YOGA\OneDrive\Pictures\Screenshots\Screenshot 2026-07-05 213952" width="800">
-</p>
-
-### Web Dashboard
-
-<p align="center">
-  <img src="C:\Users\YOGA\OneDrive\Pictures\Screenshots\Screenshot 2026-06-11 234429.png">
-</p>
-
----
-
 ## ✨ Features
 
 - 💊 Add, edit, and delete medicines
