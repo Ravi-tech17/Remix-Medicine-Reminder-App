@@ -15,7 +15,7 @@ A modern medicine reminder application that helps users manage medications, rece
 ### Web Dashboard
 
 <p align="center">
-  <img src="C:\Users\YOGA\OneDrive\Pictures\Screenshots" width="1000">
+  <img src="C:\Users\YOGA\OneDrive\Pictures\Screenshots\Screenshot 2026-06-11 234429.png">
 </p>
 
 ---
